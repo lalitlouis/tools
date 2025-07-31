@@ -17,6 +17,7 @@ import (
 	"github.com/kagent-dev/tools/internal/logger"
 	"github.com/kagent-dev/tools/internal/telemetry"
 	"github.com/kagent-dev/tools/internal/version"
+	"github.com/kagent-dev/tools/pkg/alerts"
 	"github.com/kagent-dev/tools/pkg/argo"
 	"github.com/kagent-dev/tools/pkg/cilium"
 	"github.com/kagent-dev/tools/pkg/helm"
@@ -287,6 +288,7 @@ func runStdioServer(ctx context.Context, mcp *server.MCPServer) {
 func registerMCP(mcp *server.MCPServer, enabledToolProviders []string, kubeconfig string) {
 	// A map to hold tool providers and their registration functions
 	toolProviderMap := map[string]func(*server.MCPServer){
+		"alerts":     func(s *server.MCPServer) { alerts.RegisterTools(s, nil, kubeconfig) },
 		"argo":       argo.RegisterTools,
 		"cilium":     cilium.RegisterTools,
 		"helm":       helm.RegisterTools,
