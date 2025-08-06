@@ -1,188 +1,142 @@
-# Kubernetes Pod Alerts Tool
+# Alert Collector Tools
 
-This tool provides comprehensive monitoring and analysis of Kubernetes pod alerts with AI-powered insights.
+This package provides tools for collecting and analyzing Kubernetes alert data using LLM analysis.
 
-## Features
+## Overview
 
-### 1. Pod Alert Detection
-- Automatically identifies problematic pods across namespaces
-- Detects various failure states: Pending, Failed, CrashLoopBackOff, ImagePullBackOff, etc.
-- Analyzes container statuses and pod conditions
+The Alert Collector tools enable comprehensive data collection and analysis for Kubernetes services experiencing issues. These tools can be used by kagent agents to:
 
-### 2. Detailed Analysis
-- Collects pod events and logs for context
-- Provides root cause analysis using AI
-- Suggests remediation steps and prevention strategies
-
-### 3. Cluster-wide Monitoring
-- Scans entire cluster for pod issues
-- Identifies common patterns and cluster-wide problems
-- Provides strategic recommendations for cluster health
+1. **Collect Alert Data**: Gather comprehensive information about target services including pods, events, logs, and metrics
+2. **Analyze Alert Data**: Perform LLM-based analysis to identify root causes and provide insights
+3. **Generate Remediation Scripts**: Create actionable remediation scripts based on analysis
+4. **Store Alert Data**: Persist collected data for historical analysis
 
 ## Available Tools
 
-### `alerts_get_pod_alerts`
-Get all pod alerts in a namespace or cluster.
+### `collect_alert_data`
+Collects comprehensive data for a target service.
 
 **Parameters:**
-- `namespace` (optional): Specific namespace to check
-- `all_namespaces` (optional): Check all namespaces (true/false)
-- `include_analysis` (optional): Include AI analysis of alerts (true/false)
+- `targetService` (required): Name of the target service to collect data for
+- `namespace` (required): Namespace where the target service is running
+- `collectPods` (optional): Whether to collect pod information (true/false)
+- `collectEvents` (optional): Whether to collect events (true/false)
+- `collectLogs` (optional): Whether to collect logs (true/false)
+- `maxLogLines` (optional): Maximum number of log lines to collect
 
-**Example:**
-```json
-{
-  "tool": "alerts_get_pod_alerts",
-  "arguments": {
-    "namespace": "default",
-    "include_analysis": "true"
-  }
-}
-```
+**Returns:** JSON object containing collected data
 
-### `alerts_get_pod_alert_details`
-Get detailed information about a specific pod alert.
+### `analyze_alert_data`
+Performs LLM analysis on collected alert data.
 
 **Parameters:**
-- `pod_name` (required): Name of the pod
-- `namespace` (optional): Namespace of the pod (default: default)
-- `include_analysis` (optional): Include AI analysis (true/false)
+- `data` (required): Collected alert data to analyze (JSON string)
+- `promptTemplate` (optional): Custom prompt template for analysis
 
-**Example:**
-```json
-{
-  "tool": "alerts_get_pod_alert_details",
-  "arguments": {
-    "pod_name": "my-app-pod",
-    "namespace": "production",
-    "include_analysis": "true"
-  }
-}
-```
+**Returns:** JSON object containing analysis results
 
-### `alerts_get_cluster_alerts`
-Get all alerts across the entire cluster.
+### `generate_remediation_script`
+Generates a remediation script based on alert analysis.
 
 **Parameters:**
-- `include_analysis` (optional): Include AI analysis of cluster alerts (true/false)
+- `analysis` (required): Alert analysis result (JSON string)
+- `alertType` (required): Type of alert (e.g., PodCrash, ServiceUnavailable)
 
-**Example:**
-```json
-{
-  "tool": "alerts_get_cluster_alerts",
-  "arguments": {
-    "include_analysis": "true"
-  }
-}
+**Returns:** Remediation script as text
+
+### `store_alert_data`
+Stores collected alert data to storage.
+
+**Parameters:**
+- `data` (required): Collected alert data to store (JSON string)
+- `storagePath` (optional): Path where to store the data
+
+**Returns:** JSON object with storage status
+
+## Usage Example
+
+```yaml
+# Example Agent configuration using Alert Collector tools
+apiVersion: kagent.dev/v1alpha1
+kind: Agent
+metadata:
+  name: alert-collector-agent
+  namespace: kagent
+spec:
+  name: "Alert Collector Agent"
+  description: "An agent that collects and analyzes alert data using specialized tools"
+  instruction: |
+    You are an Alert Collector Agent responsible for monitoring and analyzing Kubernetes alerts.
+    
+    When an AlertCollector CR is created, you should:
+    1. Use collect_alert_data tool to gather information about the target service
+    2. Use analyze_alert_data tool to perform LLM analysis
+    3. Use store_alert_data tool to persist the collected data
+    4. Use generate_remediation_script tool to create actionable remediation steps
+    
+    Always provide clear, actionable insights and prioritize critical issues.
+  
+  modelConfig: "default-model-config"
+  
+  tools:
+    - name: "collect_alert_data"
+      description: "Collect comprehensive data for a target service including pods, events, logs, and metrics"
+    - name: "analyze_alert_data"
+      description: "Perform LLM analysis on collected alert data"
+    - name: "store_alert_data"
+      description: "Store collected alert data to PVC"
+    - name: "generate_remediation_script"
+      description: "Generate a remediation script based on alert analysis"
 ```
 
-## Alert Types Detected
+## Integration with AlertCollector CR
 
-1. **Pod Status Issues:**
-   - Pending
-   - Failed
-   - Unknown
-   - CrashLoopBackOff
-   - ImagePullBackOff
-   - ErrImagePull
+The AlertCollector Custom Resource can trigger these tools through the kagent framework:
 
-2. **Container Issues:**
-   - Containers not ready
-   - Container restart loops
-   - Image pull failures
-   - Resource constraints
+1. **Detection**: AlertCollector CR detects an alert condition
+2. **Collection**: Uses `collect_alert_data` to gather comprehensive data
+3. **Analysis**: Uses `analyze_alert_data` to perform LLM analysis
+4. **Storage**: Uses `store_alert_data` to persist data to PVC
+5. **Remediation**: Uses `generate_remediation_script` to create actionable steps
 
-3. **Pod Condition Issues:**
-   - Ready condition false
-   - PodScheduled condition false
-   - Initialized condition false
+## Data Collection
 
-## AI Analysis Features
+The tools collect the following types of data:
 
-The tool uses AI to provide:
+- **Pod Information**: Status, conditions, restart counts, labels
+- **Events**: Kubernetes events related to the target service
+- **Logs**: Container logs from pods in the target service
+- **Metrics**: Resource usage and performance metrics (when available)
 
-1. **Root Cause Analysis:** Identifies the underlying cause of pod failures
-2. **Remediation Steps:** Provides specific actions to fix the issues
-3. **Prevention Strategies:** Suggests ways to prevent similar issues
-4. **Monitoring Recommendations:** Advises on better monitoring practices
+## LLM Analysis
 
-## Usage Examples
+The analysis includes:
 
-### Basic Pod Alert Check
-```bash
-# Check for alerts in default namespace
-curl -X POST http://localhost:8084/tools/alerts_get_pod_alerts \
-  -H "Content-Type: application/json" \
-  -d '{"namespace": "default"}'
-```
+- **Root Cause Analysis**: Identifies the underlying cause of the alert
+- **Severity Assessment**: Evaluates the impact and urgency
+- **Remediation Steps**: Provides actionable steps to resolve the issue
+- **Prevention Recommendations**: Suggests ways to prevent similar issues
 
-### Detailed Pod Analysis
-```bash
-# Get detailed analysis of a specific pod
-curl -X POST http://localhost:8084/tools/alerts_get_pod_alert_details \
-  -H "Content-Type: application/json" \
-  -d '{"pod_name": "my-app-pod", "include_analysis": "true"}'
-```
+## Storage
 
-### Cluster-wide Alert Scan
-```bash
-# Scan entire cluster for alerts
-curl -X POST http://localhost:8084/tools/alerts_get_cluster_alerts \
-  -H "Content-Type: application/json" \
-  -d '{"include_analysis": "true"}'
-```
+Collected data is stored in PVCs for:
 
-## Response Format
+- **Historical Analysis**: Track patterns over time
+- **Audit Trail**: Maintain records of incidents and resolutions
+- **Trend Analysis**: Identify recurring issues and improvements
+- **Compliance**: Meet regulatory and operational requirements
 
-The tool returns JSON responses with detailed alert information:
+## Configuration
 
-```json
-[
-  {
-    "pod_name": "my-app-pod",
-    "namespace": "default",
-    "status": "CrashLoopBackOff",
-    "reason": "CrashLoopBackOff",
-    "message": "Back-off restarting failed container",
-    "restart_count": 5,
-    "events": [
-      {
-        "type": "Warning",
-        "reason": "BackOff",
-        "message": "Back-off restarting failed container",
-        "count": 5,
-        "first_time": "2024-01-01T10:00:00Z",
-        "last_time": "2024-01-01T10:30:00Z"
-      }
-    ],
-    "logs": [
-      "Error: Cannot connect to database",
-      "FATAL: connection to server failed"
-    ],
-    "analysis": "AI-generated analysis of the issue...",
-    "remediation": "Suggested fixes..."
-  }
-]
-```
+The tools require:
 
-## Future Enhancements
-
-1. **Prometheus Integration:** Automatically trigger alerts based on Prometheus metrics
-2. **Automated Remediation:** Execute fixes automatically when possible
-3. **Alert History:** Track alert patterns over time
-4. **Custom Alert Rules:** Allow users to define custom alert conditions
-5. **Notification Integration:** Send alerts to Slack, email, etc.
-6. **Dashboard Integration:** Provide visual dashboards for alert monitoring
-
-## Dependencies
-
-- Kubernetes cluster access
-- kubectl configured
-- Optional: LLM model for AI analysis (OpenAI, etc.)
+- **Kubernetes Access**: Proper RBAC permissions to read pod, event, and log data
+- **LLM Model**: Configured model for analysis (OpenAI, Anthropic, etc.)
+- **Storage**: PVC configuration for data persistence
 
 ## Security Considerations
 
-- The tool only performs read operations on the cluster
-- No automatic remediation without explicit user consent
-- All kubectl commands are executed with proper error handling
-- Sensitive information in logs is handled according to cluster policies 
+- All data collection respects Kubernetes RBAC policies
+- LLM analysis uses configured API keys and models
+- Storage follows cluster security policies
+- No sensitive data is logged or exposed in tool outputs 

@@ -31,6 +31,8 @@ import (
 	"go.opentelemetry.io/otel/codes"
 
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/tmc/langchaingo/llms"
+	"github.com/tmc/langchaingo/llms/openai"
 )
 
 var (
@@ -286,14 +288,29 @@ func runStdioServer(ctx context.Context, mcp *server.MCPServer) {
 }
 
 func registerMCP(mcp *server.MCPServer, enabledToolProviders []string, kubeconfig string) {
+	// Initialize LLM model if OpenAI API key is available
+	var llmModel llms.Model
+	if os.Getenv("OPENAI_API_KEY") != "" {
+		var err error
+		llmModel, err = openai.New()
+		if err != nil {
+			logger.Get().Error("Failed to initialize OpenAI client", "error", err)
+			llmModel = nil
+		} else {
+			logger.Get().Info("OpenAI client initialized successfully")
+		}
+	} else {
+		logger.Get().Info("No OpenAI API key found, LLM features will be disabled")
+	}
+
 	// A map to hold tool providers and their registration functions
 	toolProviderMap := map[string]func(*server.MCPServer){
-		"alerts":     func(s *server.MCPServer) { alerts.RegisterTools(s, nil, kubeconfig) },
+		"alerts":     func(s *server.MCPServer) { alerts.RegisterTools(s, llmModel, kubeconfig) },
 		"argo":       argo.RegisterTools,
 		"cilium":     cilium.RegisterTools,
 		"helm":       helm.RegisterTools,
 		"istio":      istio.RegisterTools,
-		"k8s":        func(s *server.MCPServer) { k8s.RegisterTools(s, nil, kubeconfig) },
+		"k8s":        func(s *server.MCPServer) { k8s.RegisterTools(s, llmModel, kubeconfig) },
 		"prometheus": prometheus.RegisterTools,
 		"utils":      utils.RegisterTools,
 	}

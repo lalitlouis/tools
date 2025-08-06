@@ -1,7 +1,7 @@
-DOCKER_REGISTRY ?= ghcr.io
+DOCKER_REGISTRY ?= lr1-bd-harbor-registry.mip.storage.hpecorp.net/develop
 BASE_IMAGE_REGISTRY ?= cgr.dev
 
-DOCKER_REPO ?= kagent-dev/kagent
+DOCKER_REPO ?= kagent
 
 HELM_REPO ?= oci://ghcr.io/kagent-dev
 HELM_ACTION=upgrade --install
@@ -133,7 +133,7 @@ BUILDX_NO_DEFAULT_ATTESTATIONS=1
 BUILDX_BUILDER_NAME ?= kagent-builder-$(BUILDKIT_VERSION)
 
 DOCKER_BUILDER ?= docker buildx
-DOCKER_BUILD_ARGS ?= --pull --load --platform linux/$(LOCALARCH) --builder $(BUILDX_BUILDER_NAME)
+DOCKER_BUILD_ARGS ?= --pull --load --platform linux/amd64 --builder $(BUILDX_BUILDER_NAME)
 
 # tools image build args
 TOOLS_ISTIO_VERSION ?= 1.26.2
