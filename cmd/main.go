@@ -19,6 +19,7 @@ import (
 	"github.com/kagent-dev/tools/internal/version"
 	"github.com/kagent-dev/tools/pkg/alerts"
 	"github.com/kagent-dev/tools/pkg/argo"
+	"github.com/kagent-dev/tools/pkg/chatbot"
 	"github.com/kagent-dev/tools/pkg/cilium"
 	"github.com/kagent-dev/tools/pkg/helm"
 	"github.com/kagent-dev/tools/pkg/istio"
@@ -26,6 +27,8 @@ import (
 	"github.com/kagent-dev/tools/pkg/prometheus"
 	"github.com/kagent-dev/tools/pkg/utils"
 	"github.com/spf13/cobra"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -303,9 +306,41 @@ func registerMCP(mcp *server.MCPServer, enabledToolProviders []string, kubeconfi
 		logger.Get().Info("No OpenAI API key found, LLM features will be disabled")
 	}
 
+	// Initialize MongoDB client if MongoDB is enabled
+	var mongoClient *mongo.Client
+	if os.Getenv("MONGODB_ENABLED") == "true" {
+		mongoURI := os.Getenv("MONGODB_URI")
+		if mongoURI == "" {
+			// Default to in-cluster MongoDB
+			mongoURI = "mongodb://kagent:kagent-mongodb-password@mongodb.kagent.svc.cluster.local:27017/kagent-alerts?authSource=kagent-alerts"
+		}
+
+		clientOptions := options.Client().ApplyURI(mongoURI)
+		var err error
+		mongoClient, err = mongo.Connect(context.Background(), clientOptions)
+		if err != nil {
+			logger.Get().Error("Failed to connect to MongoDB", "error", err)
+			mongoClient = nil
+		} else {
+			// Test the connection
+			err = mongoClient.Ping(context.Background(), nil)
+			if err != nil {
+				logger.Get().Error("Failed to ping MongoDB", "error", err)
+				mongoClient = nil
+			} else {
+				logger.Get().Info("MongoDB client initialized successfully")
+			}
+		}
+	} else {
+		logger.Get().Info("MongoDB not enabled, MongoDB features will be disabled")
+	}
+
 	// A map to hold tool providers and their registration functions
 	toolProviderMap := map[string]func(*server.MCPServer){
-		"alerts":     func(s *server.MCPServer) { alerts.RegisterTools(s, llmModel, kubeconfig) },
+		"alerts":     func(s *server.MCPServer) { alerts.RegisterTools(s, llmModel, kubeconfig, mongoClient) },
+		"mongodb":    func(s *server.MCPServer) { alerts.RegisterMongoDBTools(s, mongoClient, kubeconfig) },
+		"pod-alerts": func(s *server.MCPServer) { alerts.RegisterPodAlertTools(s, mongoClient, kubeconfig) },
+		"chatbot":    func(s *server.MCPServer) { chatbot.RegisterChatbotTools(s, llmModel, mongoClient, kubeconfig) },
 		"argo":       argo.RegisterTools,
 		"cilium":     cilium.RegisterTools,
 		"helm":       helm.RegisterTools,

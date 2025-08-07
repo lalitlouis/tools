@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: spire-postgres
+  namespace: test-namespace
+  labels:
+    app: test-failing-pod
+    type: spire-postgres
+spec:
+  restartPolicy: Never
+  containers:
+  - name: spire-postgres
+    image: postgres:13
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      echo "Spire postgres pod is failing intentionally"
+      exit 1
+    env:
+    - name: POSTGRES_PASSWORD
+      value: "password"
+    - name: POSTGRES_DB
+      value: "spire"

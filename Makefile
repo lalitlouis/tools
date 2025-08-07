@@ -1,7 +1,7 @@
-DOCKER_REGISTRY ?= lr1-bd-harbor-registry.mip.storage.hpecorp.net/develop
+DOCKER_REGISTRY ?= docker.io
 BASE_IMAGE_REGISTRY ?= cgr.dev
 
-DOCKER_REPO ?= kagent
+DOCKER_REPO ?= lalitlouis
 
 HELM_REPO ?= oci://ghcr.io/kagent-dev
 HELM_ACTION=upgrade --install
@@ -125,7 +125,7 @@ TOOLS_IMG ?= $(DOCKER_REGISTRY)/$(DOCKER_REPO)/$(TOOLS_IMAGE_NAME):$(TOOLS_IMAGE
 RETAGGED_DOCKER_REGISTRY = cr.kagent.dev
 RETAGGED_TOOLS_IMG = $(RETAGGED_DOCKER_REGISTRY)/$(DOCKER_REPO)/$(TOOLS_IMAGE_NAME):$(TOOLS_IMAGE_TAG)
 
-LOCALARCH ?= $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
+LOCALARCH ?= amd64
 
 #buildx settings
 BUILDKIT_VERSION = v0.23.0

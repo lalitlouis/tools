@@ -1,0 +1,47 @@
+apiVersion: kagent.dev/v1alpha1
+kind: AlertCollector
+metadata:
+  name: failing-pods-collector
+  namespace: kagent
+spec:
+  # Target all failing pods in test-namespace
+  targetService: "test-failing-pod"
+  targetNamespace: "test-namespace"
+  alertType: "Pod"
+
+  # Collection configuration
+  collectionConfig:
+    collectEvents: true
+    collectLogs: true
+    collectMetrics: true
+    maxLogLines: 100
+    timeWindow: "5m"
+    customCommands:
+      - "kubectl get pods -n test-namespace -o wide"
+      - "kubectl describe pods -n test-namespace"
+      - "kubectl get events -n test-namespace --sort-by='.lastTimestamp'"
+      - "kubectl logs -n test-namespace spire-postgres --tail=50"
+
+  # Analysis configuration
+  analysisConfig:
+    includeRemediation: true
+    includeRootCause: true
+    modelConfig: "default-model-config"
+    promptTemplate: "Analyze the following pod failures in test-namespace and provide root cause analysis and remediation steps for each failing pod. Focus on the spire-postgres pod and other pods in CrashLoopBackOff status."
+
+  # Storage configuration
+  storageConfig:
+    storageSize: "1Gi"
+    retentionPeriod: "24h"
+    storageClass: "standard"
+
+  # Triggers - target pods in CrashLoopBackOff and Error status
+  triggers:
+    - type: "PodCrash"
+      duration: "30s"
+    - type: "Custom"
+      customCondition: "pod.status.phase == 'CrashLoopBackOff' || pod.status.phase == 'Error'"
+      duration: "10s"
+
+  # Enable remediation
+  enableRemediation: true

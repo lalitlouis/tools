@@ -1,0 +1,285 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-pods-analysis
+---
+# Pod 1: Memory pressure causing OOM kills
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-pressure-pod
+  namespace: test-pods-analysis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: memory-pressure-pod
+  template:
+    metadata:
+      labels:
+        app: memory-pressure-pod
+    spec:
+      containers:
+      - name: memory-consumer
+        image: python:3.9-slim
+        command: ["python3", "-c"]
+        args:
+        - |
+          import time
+          import os
+          print('Starting memory pressure test...')
+          print('Allocating memory...')
+          data = []
+          while True:
+              try:
+                  data.append('x' * 1000000)  # 1MB chunks
+                  if len(data) % 10 == 0:
+                      print(f'Allocated {len(data)}MB')
+              except MemoryError:
+                  print('Memory exhausted!')
+                  break
+          print('Memory test completed')
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "50m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+---
+# Pod 2: CPU intensive workload causing throttling
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-intensive-pod
+  namespace: test-pods-analysis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cpu-intensive-pod
+  template:
+    metadata:
+      labels:
+        app: cpu-intensive-pod
+    spec:
+      containers:
+      - name: cpu-consumer
+        image: python:3.9-slim
+        command: ["python3", "-c"]
+        args:
+        - |
+          import time
+          import threading
+          print('Starting CPU intensive workload...')
+          
+          def cpu_work():
+              while True:
+                  x = 0
+                  for i in range(1000000):
+                      x += i * i
+                  print(f'CPU work iteration: {x}')
+          
+          threads = []
+          for i in range(4):
+              t = threading.Thread(target=cpu_work)
+              t.start()
+              threads.append(t)
+          
+          for t in threads:
+              t.join()
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "50m"
+          limits:
+            memory: "200Mi"
+            cpu: "200m"
+---
+# Pod 3: Network connectivity issues
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: network-issues-pod
+  namespace: test-pods-analysis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: network-issues-pod
+  template:
+    metadata:
+      labels:
+        app: network-issues-pod
+    spec:
+      containers:
+      - name: network-tester
+        image: python:3.9-slim
+        command: ["python3", "-c"]
+        args:
+        - |
+          import time
+          import subprocess
+          import sys
+          print('Starting network connectivity tests...')
+          
+          while True:
+              print('Testing connection to external service...')
+              try:
+                  # Try to connect to external services that will fail
+                  result = subprocess.run(['wget', '-q', '--timeout=5', 'http://nonexistent-external-service.com'], 
+                                        capture_output=True, text=True)
+                  if result.returncode != 0:
+                      print('External connection failed')
+              except Exception as e:
+                  print(f'Network error: {e}')
+              
+              try:
+                  result = subprocess.run(['wget', '-q', '--timeout=5', 'http://invalid-kubernetes-service.default.svc.cluster.local'], 
+                                        capture_output=True, text=True)
+                  if result.returncode != 0:
+                      print('Internal service connection failed')
+              except Exception as e:
+                  print(f'Internal network error: {e}')
+              
+              print('Network test iteration completed')
+              time.sleep(30)
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "25m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+---
+# Pod 4: Application crash with restart loop
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crash-loop-pod
+  namespace: test-pods-analysis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: crash-loop-pod
+  template:
+    metadata:
+      labels:
+        app: crash-loop-pod
+    spec:
+      containers:
+      - name: crashing-app
+        image: python:3.9-slim
+        command: ["python3", "-c"]
+        args:
+        - |
+          import time
+          import random
+          import sys
+          
+          print('Application starting...')
+          time.sleep(5)
+          
+          # Random crash simulation
+          crash_reason = random.choice([
+              'Division by zero',
+              'Index out of range',
+              'File not found',
+              'Permission denied',
+              'Connection timeout'
+          ])
+          
+          print(f'Simulating crash: {crash_reason}')
+          
+          if crash_reason == 'Division by zero':
+              1/0
+          elif crash_reason == 'Index out of range':
+              [1,2,3][10]
+          elif crash_reason == 'File not found':
+              open('/nonexistent/file.txt')
+          elif crash_reason == 'Permission denied':
+              import os
+              os.chmod('/proc/1', 0o000)
+          else:
+              raise Exception(crash_reason)
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "25m"
+          limits:
+            memory: "100Mi"
+            cpu: "100m"
+---
+# Pod 5: Resource starvation and slow response
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: slow-response-pod
+  namespace: test-pods-analysis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: slow-response-pod
+  template:
+    metadata:
+      labels:
+        app: slow-response-pod
+    spec:
+      containers:
+      - name: slow-app
+        image: python:3.9-slim
+        command: ["python3", "-c"]
+        args:
+        - |
+          import time
+          import threading
+          import random
+          
+          print('Starting slow response application...')
+          
+          def slow_operation():
+              while True:
+                  print('Processing request...')
+                  # Simulate slow processing
+                  time.sleep(random.uniform(10, 30))
+                  print('Request processed (took too long)')
+          
+          def memory_leak():
+              data = []
+              while True:
+                  data.append('x' * 100000)  # 100KB chunks
+                  if len(data) % 100 == 0:
+                      print(f'Memory usage: {len(data) * 100}KB')
+                  time.sleep(1)
+          
+          # Start background threads
+          threading.Thread(target=slow_operation, daemon=True).start()
+          threading.Thread(target=memory_leak, daemon=True).start()
+          
+          # Main thread just logs
+          while True:
+              print('Application running but very slow...')
+              time.sleep(60)
+        resources:
+          requests:
+            memory: "50Mi"
+            cpu: "25m"
+          limits:
+            memory: "150Mi"
+            cpu: "150m"
+---
+# Service to expose the pods
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-pods-service
+  namespace: test-pods-analysis
+spec:
+  selector:
+    app: memory-pressure-pod
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP 

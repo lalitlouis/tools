@@ -59,3 +59,14 @@ otel:
         endpoint: http://host.docker.internal:4317
         timeout: 15
         insecure: true
+
+# MongoDB configuration
+mongodb:
+  enabled: true
+  uri: "mongodb://kagent:kagent-mongodb-password@mongodb.kagent.svc.cluster.local:27017/kagent-alerts?authSource=kagent-alerts"
+
+# Proxy configuration
+proxy:
+  http: "http://hpeproxy.its.hpecorp.net:80"
+  https: "http://hpeproxy.its.hpecorp.net:80"
+  noProxy: "m2-lr1-dev-vm215224.mip.storage.hpecorp.net,10.96.0.1,10.96.0.0/12,10.96.0.12,10.244.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,172.25.0.2,172.25.0.3,172.25.0.4,172.25.0.5,172.25.0.6,172.25.0.7,172.25.0.8,172.25.0.9,172.25.0.0/8,10.227.215.223,172.25.0.24,172.25.0.27,0.0.0.0"

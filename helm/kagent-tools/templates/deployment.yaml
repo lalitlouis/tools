@@ -59,6 +59,16 @@ spec:
               value: {{ .Values.otel.tracing.exporter.otlp.timeout | quote }}
             - name: OTEL_EXPORTER_OTLP_TRACES_INSECURE
               value: {{ .Values.otel.tracing.exporter.otlp.insecure | quote }}
+            - name: MONGODB_ENABLED
+              value: {{ .Values.mongodb.enabled | quote }}
+            - name: MONGODB_URI
+              value: {{ .Values.mongodb.uri | quote }}
+            - name: HTTP_PROXY
+              value: {{ .Values.proxy.http | quote }}
+            - name: HTTPS_PROXY
+              value: {{ .Values.proxy.https | quote }}
+            - name: NO_PROXY
+              value: {{ .Values.proxy.noProxy | quote }}
           {{- with .Values.tools.env }}
             {{- toYaml . | nindent 12 }}
           {{- end }}

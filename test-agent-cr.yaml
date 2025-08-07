@@ -1,0 +1,49 @@
+apiVersion: kagent.dev/v1alpha1
+kind: Agent
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kagent.dev/v1alpha1","kind":"Agent","metadata":{"annotations":{},"name":"test-agent","namespace":"kagent"},"spec":{"deployment":{"env":[{"name":"HTTP_PROXY","value":"http://hpeproxy.its.hpecorp.net:80"},{"name":"HTTPS_PROXY","value":"http://hpeproxy.its.hpecorp.net:80"},{"name":"NO_PROXY","value":"m2-lr1-dev-vm215224.mip.storage.hpecorp.net,10.96.0.1,10.96.0.0/12,10.96.0.12,10.244.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,172.25.0.2,172.25.0.3,172.25.0.4,172.25.0.5,172.25.0.6,172.25.0.7,172.25.0.8,172.25.0.9,172.25.0.0/8,10.227.215.223,172.25.0.24,172.25.0.27,0.0.0.0"}],"replicas":1},"modelConfig":"default-model-config","systemMessage":"You are a helpful AI assistant that can help with Kubernetes alert collection and analysis.","tools":[{"mcpServer":{"toolNames":["chatbot_query","log_display","analysis_display","enhanced_remediation","get_remediation"],"toolServer":"kagent/kagent-tool-server"},"type":"McpServer"}]}}
+  creationTimestamp: "2025-08-06T23:41:23Z"
+  generation: 1
+  name: test-agent
+  namespace: kagent
+  resourceVersion: "1143250"
+  uid: f7dfa708-959f-42d6-9fa2-63241e4155c0
+spec:
+  deployment:
+    env:
+    - name: HTTP_PROXY
+      value: http://hpeproxy.its.hpecorp.net:80
+    - name: HTTPS_PROXY
+      value: http://hpeproxy.its.hpecorp.net:80
+    - name: NO_PROXY
+      value: m2-lr1-dev-vm215224.mip.storage.hpecorp.net,10.96.0.1,10.96.0.0/12,10.96.0.12,10.244.0.0/16,.external.hpe.local,localhost,.cluster.local,.svc,.default.svc,127.0.0.1,172.25.0.2,172.25.0.3,172.25.0.4,172.25.0.5,172.25.0.6,172.25.0.7,172.25.0.8,172.25.0.9,172.25.0.0/8,10.227.215.223,172.25.0.24,172.25.0.27,0.0.0.0
+    replicas: 1
+  modelConfig: default-model-config
+  systemMessage: You are a helpful AI assistant that can help with Kubernetes alert
+    collection and analysis.
+  tools:
+  - mcpServer:
+      toolNames:
+      - chatbot_query
+      - log_display
+      - analysis_display
+      - enhanced_remediation
+      - get_remediation
+      toolServer: kagent/kagent-tool-server
+    type: McpServer
+status:
+  conditions:
+  - lastTransitionTime: "2025-08-06T23:41:24Z"
+    message: ""
+    reason: AgentReconciled
+    status: "True"
+    type: Accepted
+  - lastTransitionTime: "2025-08-06T23:41:47Z"
+    message: Deployment is ready
+    reason: DeploymentReady
+    status: "True"
+    type: Ready
+  configHash: QQF7A/sfh4tbJgLlbJla+d64Pcyjzc9T37d+Y82Pi8w=
+  observedGeneration: 1

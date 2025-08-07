@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: spire-postgres
+  namespace: test-namespace
+  labels:
+    app: spire-postgres
+spec:
+  containers:
+  - name: spire-postgres
+    image: postgres:13
+    env:
+    - name: POSTGRES_PASSWORD
+      value: "password"
+    - name: POSTGRES_DB
+      value: "spire"
+    - name: POSTGRES_USER
+      value: "spire"
+    ports:
+    - containerPort: 5432
+    command: ["/bin/sh"]
+    args: ["-c", "echo 'This pod is designed to fail'; exit 1"]
+  restartPolicy: Never

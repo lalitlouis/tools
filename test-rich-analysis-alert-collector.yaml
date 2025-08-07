@@ -1,0 +1,36 @@
+apiVersion: kagent.dev/v1alpha1
+kind: AlertCollector
+metadata:
+  name: test-rich-analysis
+  namespace: kagent
+spec:
+  alertType: Pod
+  targetService: test-pods-analysis
+  targetNamespace: test-pods-analysis
+  selector:
+    namespace: test-pods-analysis
+  analysisConfig:
+    includeRemediation: true
+    includeRootCause: true
+    modelConfig: default-model-config
+    promptTemplate: |
+      Analyze this Kubernetes alert scenario and provide:
+      1. Root cause analysis - What is causing the pod issues?
+      2. Severity assessment (Low/Medium/High/Critical)
+      3. Immediate remediation steps
+      4. Prevention recommendations
+
+      Focus on the specific Kubernetes events, pod status, and any error messages in the collected data.
+      Pay special attention to memory pressure, CPU throttling, network issues, and application crashes.
+  collectionConfig:
+    collectEvents: true
+    collectLogs: true
+    collectMetrics: true
+    maxLogLines: 100
+    timeWindow: 5m
+  storageConfig:
+    retentionPeriod: 7d
+    storageSize: 1Gi
+  triggers:
+  - type: PodCrash
+    duration: 30s 
